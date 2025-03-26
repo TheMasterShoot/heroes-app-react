@@ -1,12 +1,23 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+import queryString from "query-string";
 import { HeroCard } from '../heroes/HeroCard'
+import { useForm } from '../../hooks/useForm';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getHeroesByName } from '../../selectors/getHeroesByName';
 
 export const SearchScreen = () => {
 
-  const heroesFiltered = heroes;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { q = '' } = queryString.parse(location.search);
 
-  const handleSearch = () => {
-    
+  const [ formValues, handleInputChange ] = useForm( { searchText: q } );
+  const { searchText } = formValues;
+  const heroesFiltered = useMemo(() => getHeroesByName( q ), [ q ]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`?q=${ searchText }`);
   }
 
   return (
@@ -18,15 +29,19 @@ export const SearchScreen = () => {
         <div className='col-5'>
            <h4>Search Form</h4>
            <hr/>
-           <form>
+           <form onSubmit={ handleSearch }>
                 <input
                 type='text'
                 placeholder='Find your hero'
                 className='form-control'
+                name='searchText'
+                autoComplete='off'
+                value={ searchText }
+                onChange={ handleInputChange }
                 />
                 <button 
                     type='submit'
-                    className='btn m-1 btn-block btn-outline-primary'
+                    className='btn mt-1 d-block w-100 btn-outline-primary'
                 >
                     Search...
                 </button> 
@@ -35,13 +50,30 @@ export const SearchScreen = () => {
         <div className='col-7'>
             <h4>Results</h4>
             <hr/>
+
             {
-                heroesFiltered.map( hero =>{
+                (q ==='')
+                    &&
+                    <div className='alert alert-info'>
+                        Search a hero
+                    </div>
+            }
+
+            {
+                (q !=='' && heroesFiltered.length === 0)
+                    &&
+                    <div className='alert alert-danger'>
+                        There is not a hero with { q }
+                    </div>
+            }
+
+            {
+                heroesFiltered.map( hero => (
                     <HeroCard
                         key={ hero.id}
                         { ...hero }
                     />
-                })
+                ))
             }
         </div>
       </div>
